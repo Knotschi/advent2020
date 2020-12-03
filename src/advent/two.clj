@@ -16,73 +16,51 @@
   - a char which must be present at least min and at most max times in the password
   - a column character
   - a blank space
-  - and finally the password
-
-  the function will return a map with the following shape:
-  {:min 1
-   :max 3
-   :character a
-   :password abcd}"
+  - and finally the password"
   [line]
   (let [[_ min max char password] (re-find line-regex line)]
-    {:min (Integer/parseInt min)
-     :max (Integer/parseInt max)
-     :char char
-     :password password}))
+    [[(Integer/parseInt min) (Integer/parseInt max)] (get char 0) password]))
 
 (comment
   (parse-line "15-19 k: kkkkkkkkkkkkzkkkkkkk")
-  ;; => {:min 15, :max 19, :char "k", :password "kkkkkkkkkkkkzkkkkkkk"}
-
+  ;; => [[15 19] \k "kkkkkkkkkkkkzkkkkkkk"]
   )
 
 (defn read-data [filename]
   (mapv parse-line (read-input-lines filename)))
 
-(defn valid-password?
-  [{:keys [min max char password]}]
-  (let [n (count (re-seq (re-pattern char) password))]
-    (and (>= n min) (<= n max))))
+(defn valid-passwords
+  [passwords]
+  (reduce
+    (fn [acc [[min max] c pw]]
+      (if (<= min ((frequencies pw) c 0) max)
+        (inc acc)
+        acc))
+    0
+    passwords))
 
-(comment
-  (->  "15-19 k: kkkkkkkkkkkkzkkkkkkk"
-    parse-line
-    valid-password?) ;; => true
-
-  (->  "1-3 k: aaaa"
-    parse-line
-    valid-password?) ;; => false
-  )
-
-(defn valid-password-fix?
-  [{:keys [min max char password]}]
-  (let [c1 (nth password (dec min))
-        c2 (nth password (dec max))
-        compare (nth char 0)]
-    (cond
-      (and (= c1 compare) (= c2 compare)) false
-      (= c1 compare) true
-      (= c2 compare) true
-      :else false)))
-
-(comment
-
-  (valid-password-fix? {:min 1 :max 3 :char "a" :password "abc"}) ;; => true
-  (valid-password-fix? {:min 1 :max 3 :char "a" :password "aba"}) ;; => false
-  (valid-password-fix? {:min 1 :max 3 :char "k" :password "aba"}) ;; => false
-  )
+(defn valid-passwords2
+  [passwords]
+  (reduce
+    (fn [acc [[min max] c pw]]
+      (let [a (= c (get pw (dec min)))
+            b (= c (get pw (dec max)))]
+        (if (or (and a (not b))
+                (and (not a) b))
+          (inc acc)
+          acc)))
+    0
+    passwords))
 
 
 (comment
   ;; solution 1
   (->> "resources/two.data"
     read-data
-    (filterv valid-password?)
-    count) ;; => 655
+    valid-passwords) ;; => 655
 
   ;; solution 2
   (->> "resources/two.data"
     read-data
-    (filterv valid-password-fix?)
-    count) ;; => 673
+    valid-passwords2) ;; => 673
 )

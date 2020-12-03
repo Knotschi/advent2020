@@ -2,35 +2,34 @@
   (:require [advent.utils :refer [read-input-lines]]))
 
 (defn read-data [filename]
-  (mapv #(Integer/parseInt %) (read-input-lines filename)))
+  (into #{} (mapv #(Integer/parseInt %) (read-input-lines filename))))
+
+(read-data "resources/one.data")
 
 (defn find-sum
   "returns the first two elements in `values` whos sum is
    equal to `check-num`"
   [values check-num]
-  (loop [val (first values)
-         others (rest values)]
-    (when val
-      (if-let [other (reduce
-                       (fn [_ v]
-                         (when (= check-num (+ v val))
-                           (reduced v)))
-                       nil others)]
-        [val other]
-        (recur (first others) (rest others))))))
+  (reduce
+    (fn [_ n]
+      (when-let [n2 (values (- 2020 n))]
+        (reduced (* n n2))))
+    values))
 
 (defn find-sum-2
   "returns the first three elements in `values` whos sum is
    equal to `check-num`"
   [values check-num]
-  (loop [val (first values)
-         others (rest values)]
-    (if-let [[val2 val3] (find-sum others (- check-num val))]
-      (* val val2 val3)
-      (recur (first others) (rest others)))))
+  (reduce
+    (fn [_ [n1 n2]]
+      (when-let [n3 (values (- 2020 n1 n2))]
+        (reduced (* n1 n2 n3))))
+    (for [a values
+          b values]
+      [a b])))
 
 (defn solution-1 []
-  (reduce * (find-sum (read-data "resources/one.data") 2020)))
+  (find-sum (read-data "resources/one.data") 2020))
 
 (defn solution-2 []
   (find-sum-2 (read-data "resources/one.data") 2020))
